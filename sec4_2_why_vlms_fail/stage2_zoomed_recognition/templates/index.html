@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cropper — direct/physical images</title>
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e6e8ee; --mut:#9aa3b2;
+          --accent:#5b8cff; --ok:#31c48d; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.45 -apple-system,Segoe UI,Roboto,sans-serif;
+         background:var(--bg); color:var(--fg); height:100vh; display:flex; }
+  #sidebar { width:240px; border-right:1px solid var(--line); background:var(--panel);
+             display:flex; flex-direction:column; }
+  #sidebar h2 { margin:0; padding:12px 14px; font-size:13px; border-bottom:1px solid var(--line); }
+  #progress { padding:6px 14px; color:var(--mut); font-size:12px; border-bottom:1px solid var(--line); }
+  #list { overflow-y:auto; flex:1; }
+  .row { padding:7px 14px; cursor:pointer; border-bottom:1px solid #20242e;
+         display:flex; align-items:center; gap:8px; font-size:12px; }
+  .row:hover { background:#1e222b; }
+  .row.active { background:#243049; color:#fff; }
+  .row .gt { color:var(--mut); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  .dot { width:8px; height:8px; border-radius:50%; background:#3a4150; flex:none; }
+  .dot.done { background:var(--ok); }
+  .cnt { color:var(--ok); font-size:11px; }
+  #main { flex:1; display:flex; flex-direction:column; min-width:0; }
+  #topbar { padding:10px 14px; border-bottom:1px solid var(--line); display:flex;
+            gap:10px; align-items:center; flex-wrap:wrap; background:var(--panel); }
+  #stage { flex:1; overflow:auto; display:flex; align-items:center; justify-content:center;
+           background:#0a0c10; position:relative; }
+  #wrap { position:relative; line-height:0; }
+  #img { max-width:none; user-select:none; -webkit-user-drag:none; }
+  #sel { position:absolute; border:2px dashed var(--accent); background:rgba(91,140,255,.15);
+         display:none; pointer-events:none; }
+  #panel { border-top:1px solid var(--line); background:var(--panel); padding:12px 14px;
+           display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  select,input,button { font:inherit; color:var(--fg); background:#0f1218;
+           border:1px solid var(--line); border-radius:6px; padding:8px 11px; }
+  button { cursor:pointer; background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  button.secondary { background:#232833; border-color:var(--line); color:var(--fg); font-weight:500; }
+  button:disabled { opacity:.45; cursor:default; }
+  .kv { color:var(--mut); font-size:12px; }
+  .gtbox { background:#12331f; border:1px solid #1f5c38; color:#bff0d3; padding:6px 9px;
+           border-radius:6px; display:inline-block; }
+  .hint { color:var(--mut); font-size:12px; }
+  #zoom { width:120px; }
+  .thumb { border:1px solid var(--line); border-radius:6px; max-width:150px; max-height:96px; }
+  #toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
+           background:#1f5c38; color:#d6ffe8; padding:8px 16px; border-radius:8px;
+           opacity:0; transition:opacity .2s; pointer-events:none; font-size:13px; }
+  #toast.show { opacity:1; }
+</style>
+</head>
+<body>
+  <div id="sidebar">
+    <h2>Direct / physical originals</h2>
+    <div id="progress">0 / {{ total }} cropped</div>
+    <div id="list"></div>
+  </div>
+
+  <div id="main">
+    <div id="topbar">
+      <button class="secondary" id="prev">◀ Prev</button>
+      <button class="secondary" id="next">Next ▶</button>
+      <span class="gtbox" id="idpill">—</span>
+      <label class="kv">Zoom <input type="range" id="zoom" min="0.2" max="3" step="0.05" value="1"></label>
+      <button class="secondary" id="clearsel">Clear box</button>
+      <button class="secondary" id="undo">Undo last crop</button>
+      <span class="hint">Drag on the image to box the reflection/shadow region, then Save crop.</span>
+    </div>
+
+    <div id="stage">
+      <div id="wrap">
+        <img id="img" alt="">
+        <div id="sel"></div>
+      </div>
+    </div>
+
+    <div id="panel">
+      <div>
+        <div class="kv">Ground truth</div>
+        <div><span class="gtbox" id="gt">—</span></div>
+      </div>
+      <label class="kv">Label (optional)
+        <input id="label" list="labels" placeholder="shadow / reflection" style="width:150px">
+        <datalist id="labels"><option>shadow</option><option>reflection</option></datalist>
+      </label>
+      <button id="save" disabled>Save crop ▸</button>
+      <span class="kv" id="cropinfo">no box</span>
+      <span class="kv" id="idcount"></span>
+      <img id="thumb" class="thumb" style="display:none">
+    </div>
+  </div>
+  <div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let items = [], idx = 0, box = null, natW = 0, natH = 0, scale = 1;
+
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),1200); }
+
+async function loadItems() {
+  items = await (await fetch('/api/items')).json();
+  renderList(); select(0);
+}
+function doneCount(){ return items.filter(i=>i.crops>0).length; }
+function renderList() {
+  const list = $('#list'); list.innerHTML = '';
+  items.forEach((it, i) => {
+    const row = document.createElement('div');
+    row.className = 'row' + (i===idx ? ' active':'');
+    row.innerHTML = `<span class="dot ${it.crops>0?'done':''}"></span>
+      <span>#${it.id}</span>
+      <span class="gt">${it.ground_truth||''}</span>
+      ${it.crops>0?`<span class="cnt">${it.crops}</span>`:''}`;
+    row.onclick = () => select(i);
+    list.appendChild(row);
+  });
+  $('#progress').textContent = `${doneCount()} / ${items.length} cropped`;
+}
+function select(i) {
+  idx = Math.max(0, Math.min(items.length-1, i));
+  const it = items[idx];
+  $('#idpill').textContent = `#${it.id}`;
+  $('#gt').textContent = it.ground_truth || '(none)';
+  updateCount();
+  clearSel();
+  const img = $('#img');
+  img.onload = () => { natW = img.naturalWidth; natH = img.naturalHeight; applyZoom(); };
+  img.src = '/img/' + it.id + '?t=' + Date.now();
+  renderList();
+}
+function updateCount(){ const n=items[idx].crops; $('#idcount').textContent = n>0?`(${n} saved for this image)`:''; }
+function applyZoom() {
+  scale = parseFloat($('#zoom').value);
+  $('#img').style.width = (natW * scale) + 'px';
+  clearSel();
+}
+function clearSel(){ box=null; $('#sel').style.display='none'; $('#thumb').style.display='none';
+  $('#cropinfo').textContent='no box'; $('#save').disabled=true; }
+
+// ---- drag to select ----
+let dragging=false, sx=0, sy=0;
+const wrap = $('#wrap'), sel = $('#sel');
+wrap.addEventListener('mousedown', e => {
+  if (e.target.id!=='img' && e.target.id!=='sel') return;
+  dragging=true; const r=wrap.getBoundingClientRect(); sx=e.clientX-r.left; sy=e.clientY-r.top;
+  sel.style.display='block'; sel.style.left=sx+'px'; sel.style.top=sy+'px';
+  sel.style.width='0px'; sel.style.height='0px'; e.preventDefault();
+});
+window.addEventListener('mousemove', e => {
+  if(!dragging) return;
+  const r=wrap.getBoundingClientRect();
+  let cx=Math.max(0,Math.min(e.clientX-r.left, natW*scale));
+  let cy=Math.max(0,Math.min(e.clientY-r.top, natH*scale));
+  const x=Math.min(sx,cx), y=Math.min(sy,cy), w=Math.abs(cx-sx), h=Math.abs(cy-sy);
+  sel.style.left=x+'px'; sel.style.top=y+'px'; sel.style.width=w+'px'; sel.style.height=h+'px';
+});
+window.addEventListener('mouseup', () => {
+  if(!dragging) return; dragging=false;
+  const w=parseFloat(sel.style.width), h=parseFloat(sel.style.height);
+  if(w<5||h<5){ clearSel(); return; }
+  box = { x: Math.round(parseFloat(sel.style.left)/scale),
+          y: Math.round(parseFloat(sel.style.top)/scale),
+          w: Math.round(w/scale), h: Math.round(h/scale) };
+  makeThumb();
+  $('#cropinfo').textContent = `box ${box.w}×${box.h}px @(${box.x},${box.y})`;
+  $('#save').disabled=false;
+});
+
+function cropCanvas() {
+  const c=document.createElement('canvas'); c.width=box.w; c.height=box.h;
+  c.getContext('2d').drawImage($('#img'), box.x, box.y, box.w, box.h, 0,0, box.w, box.h);
+  return c;
+}
+function makeThumb(){ const t=$('#thumb'); t.src=cropCanvas().toDataURL('image/png'); t.style.display='block'; }
+
+async function save() {
+  if(!box) return;
+  const it=items[idx];
+  $('#save').disabled=true;
+  const crop = cropCanvas().toDataURL('image/png');
+  const res = await fetch('/api/save', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({id:it.id, crop, box, label:$('#label').value})});
+  const data = await res.json();
+  if(data.error){ toast('ERROR: '+data.error); return; }
+  items[idx].crops = data.crops_for_id;
+  renderList(); updateCount();
+  toast(`Saved ${data.crop_file}  (total ${data.total_saved})`);
+  clearSel();
+}
+async function undo() {
+  const it=items[idx];
+  const res = await fetch('/api/delete_last', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({id:it.id})});
+  const data = await res.json();
+  items[idx].crops = data.crops_for_id;
+  renderList(); updateCount(); toast('Removed last crop for #'+it.id);
+}
+
+$('#save').onclick = save;
+$('#undo').onclick = undo;
+$('#prev').onclick = ()=>select(idx-1);
+$('#next').onclick = ()=>select(idx+1);
+$('#clearsel').onclick = clearSel;
+$('#zoom').oninput = applyZoom;
+window.addEventListener('keydown', e=>{
+  if(e.target.tagName==='INPUT') return;
+  if(e.key==='ArrowLeft') select(idx-1);
+  if(e.key==='ArrowRight') select(idx+1);
+  if(e.key==='Enter' && !$('#save').disabled) save();
+});
+loadItems();
+</script>
+</body>
+</html>
