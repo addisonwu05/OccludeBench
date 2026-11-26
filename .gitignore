@@ -27,3 +27,7 @@
 __pycache__/
 .DS_Store
 .env
+
+# README logos and badges
+!assets/logos/*.png
+!assets/badges/*.png

@@ -8,7 +8,7 @@ Princeton University &nbsp;·&nbsp; <sup>\*</sup>Equal contribution
 
 <img src="assets/logos/princeton.png" alt="Princeton University" height="44">
 
-[![CVinW Workshop @ CVPR 2026](https://img.shields.io/badge/2026-CVinW%20Workshop-4a6fb5?style=for-the-badge&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADoAAAAgCAMAAAB0KJvnAAAAwFBMVEX///8AAAD///////////////////////////8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADs9ti4AAAAMHRSTlP8AAlT0i6vkXQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeCc5OAAABfElEQVR42pWVQYLDIAhFAVG8/4knho%2BFNGk7bqLCEwKIxMLdlEhN1rSt0Tkm0homfEj3qi9dEm7kQxvzPGeD2c6JheyYHnDfq0NXKK2p4xgVoPOFrs2kSu2wqkkK4aE1XJ5QsoKSUBZSF2zfoSoFbQTP/CcnKzzHtxxcUSPXYYFPFRVHZ8/o6KdwOKoiCO2A4xX17Q7UY6jxG5J3qQm2gUpBpaBwWJHYQPkHqxd0hhO36IPVEpdArTrsB72hLjV8tlXN6ERyAvWAR5ICgVVX7peSiAj7iCMa6vS5JEx2aWMAnTdoKcTJLzTMeghmuUl35W98sYrbpvaO7ksH4fVfxROrA8ob1ddVR3LGNcK3qK0zOaw%2BlUT0CRwUSTpjwZ8KceT%2Bk9Bq9QmVHMRk9QbVK6opd7%2Bg%2B77KP9BRG0w0NC%2Bmzyjamm0dS235M1qbKaMmfkJzC1%2B/mlD5guYyPSvxVXt78WR1m9HlbnpYvqL7kZyLSy9h63vRgcbKX9A/TogJzfpDaosAAAAASUVORK5CYII%3D)](https://cvpr.thecvf.com/Conferences/2026)
+<a href="https://cvpr.thecvf.com/Conferences/2026"><img src="assets/badges/cvpr.png" alt="CVinW Workshop @ CVPR 2026" height="28"></a>
 [![Paper](https://img.shields.io/badge/paper-A42C25?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2610.13790)
 [![Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Hugging%20Face-FFD21E)](https://huggingface.co/datasets/afs07fda89sdfas90/data)
 
