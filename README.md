@@ -10,7 +10,7 @@ Princeton University &nbsp;·&nbsp; <sup>\*</sup>Equal contribution
 
 <a href="https://cvpr.thecvf.com/Conferences/2026"><img src="assets/badges/cvpr.png" alt="CVinW Workshop @ CVPR 2026" height="28"></a>
 [![Paper](https://img.shields.io/badge/paper-A42C25?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2610.13790)
-[![Dataset](https://img.shields.io/badge/dataset-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/datasets/afs07fda89sdfas90/data)
+<a href="https://huggingface.co/datasets/afs07fda89sdfas90/data"><img src="assets/badges/dataset.png" alt="Dataset" height="28"></a>
 
 </div>
 
